@@ -1,7 +1,9 @@
 // from data.js
 var alienData = data;
 
-//// Input data into the table body ////
+/////////////////////////////////////////////////////////////////////////////
+// Create the table using all the provided data
+/////////////////////////////////////////////////////////////////////////////
 
 // Reference to table body
 var tbody = d3.select("tbody");
@@ -14,37 +16,36 @@ alienData.forEach((alienSighting) => {
     Object.entries(alienSighting).forEach(([key,value]) => {
         // Append a cell to the table row for each object
         var cell = row.append("td");
-        // Use d3 to update the cell's text
-        cell.text(value);
+        // For cleaner readibility, capitalize both state and country
+        if (key == 'state' || key == 'country' ) {
+            // Capitalize the entire word
+            var val = value.toUpperCase();
+            // Update cell's text
+            cell.text(val);
+        }
+        // For city, capitalize the first letter 
+        else if (key == 'city') {
+            if(value.includes('(')) {
+                // Split the words by space and bracket, capitalize the first letter and use the remaining string, then rejoin the string
+                var val = value.split(' (').map((v) => v.charAt(0).toUpperCase() + v.substring(1)).join(' (');
+            }
+            else {
+                // Split the words by space, capitalize the first letter and use the remaining string, then rejoin using a space
+                var val = value.split(' ').map((v) => v.charAt(0).toUpperCase() + v.substring(1)).join(' ');
+            }
+            // Update cell's text
+            cell.text(val);
+        }
+        else {
+            // Update cell's text
+            cell.text(value);
+        }
     })
-})
+});
 
-//// Create a date/time filter ////
-
-// Select the button
-//var button = d3.select("#filter-btn")
-
-// Use .on to create filtering functionality 
-//button.on("click", () => {
-    // Select the user inputted date
- //   var inputDate = d3.select("#datetime");
-    // Reference the inputted value
- //   var inputValue = inputDate.property("value");
-    // Use .filter to filter based on the input value
- //   var filteredData = alienData.filter(alienData => alienData.datetime === inputValue);
-    // Use console.log to check if the above filter worked
- //   console.log(filteredData);
-    // To filter the table, first remove all previous rows
- //   tbody.html("");
-    // Using the table function from above, swap all the data for the filtered data
- //   filteredData.forEach((alienSighting) => {
-  //      var row=tbody.append("tr");
-   //     Object.entries(alienSighting).forEach(([key,value]) => {
-    //        var cell = row.append("td");
-     //       cell.text(value);
-     //   })
-  //  })
-//})
+/////////////////////////////////////////////////////////////////////////////
+// Create dropdown menus for state, country and shape
+/////////////////////////////////////////////////////////////////////////////
 
 // Retrieve all unique states
 var states = [...new Set(alienData.map(alienData => alienData.state))];
@@ -57,31 +58,28 @@ states.forEach((state) => {
     var opt = document.createElement("option");
     // Set value to state name
     opt.value = state;
-    // Set text to state name
-    opt.text = state;
+    // Set text to state name (capitalized)
+    opt.text = state.toUpperCase();
     // Append option element to selectState 
     selectState.appendChild(opt);
 });
 
-// Retrieve all unique countries
+// Use a similar process for countries and shapes as done for states
+//// COUNTRIES
 var countries = [...new Set(alienData.map(alienData => alienData.country))];
-// Reference select id for state dropdown
 var selectCountry = document.getElementById("country");
 
-// Using a for-loop, create a function to create dropdown for countries
 countries.forEach((country) => {
     var opt = document.createElement("option");
     opt.value = country;
-    opt.text = country;
+    opt.text = country.toUpperCase();
     selectCountry.appendChild(opt);
 });
 
-// Retrieve all unique countries
+//// SHAPES
 var shapes = [...new Set(alienData.map(alienData => alienData.shape))];
-// Reference select id for state dropdown
 var selectShape = document.getElementById("shape");
 
-// Using a for-loop, create a function to create dropdown for countries
 shapes.forEach((shape) => {
     var opt = document.createElement("option");
     opt.value = shape;
@@ -89,12 +87,18 @@ shapes.forEach((shape) => {
     selectShape.appendChild(opt);
 });
 
+/////////////////////////////////////////////////////////////////////////////
+// Create the filtered table for all five search categories
+/////////////////////////////////////////////////////////////////////////////
+
 // Select the button
 var button = d3.select("#filter-btn")
 
 // Use .on to create filtering functionality 
 button.on("click", () => {
+    // Select the user inputted date
     var inputDate = d3.select("#datetime");
+    // Reference the inputted value
     var dateValue = inputDate.property("value");
 
     var inputCity = d3.select("#city");
@@ -109,39 +113,35 @@ button.on("click", () => {
     var inputShape = d3.select("#shape");
     var shapeValue = inputShape.property("value");
 
-    if (dateValue != "" && cityValue == "" && stateValue == "" && countryValue == "" && shapeValue == "") {
-        var filteredData = alienData.filter(alienData => alienData.datetime == dateValue);
-    }
-    else if (dateValue == "" && cityValue != "" && stateValue == "" && countryValue == "" && shapeValue == "") {
-        var filteredData = alienData.filter(alienData => alienData.city == cityValue);
-    }
-    else if (dateValue == "" && cityValue == "" && stateValue != "" && countryValue == "" && shapeValue == "") {
-        var filteredData = alienData.filter(alienData => alienData.state == stateValue);
-    }
-    else if (dateValue == "" && cityValue == "" && stateValue == "" && countryValue != "" && shapeValue == "") {
-        var filteredData = alienData.filter(alienData => alienData.country == countryValue);
-    }
-    else if (dateValue == "" && cityValue == "" && stateValue == "" && countryValue == "" && shapeValue != "") {
-        var filteredData = alienData.filter(alienData => alienData.shape == shapeValue);
-    }
-    else if (dateValue != "" && cityValue != "" && stateValue == "" && countryValue == "" && shapeValue == "") {
-        var filteredData = alienData.filter(alienData => alienData.datetime == dateValue && alienData.city == cityValue);
-    }
-
- 
-    else {
-        var filteredData = alienData.filter(alienData => alienData.datetime == dateValue && alienData.city == cityValue && alienData.state == stateValue && alienData.country == countryValue && alienData.shape == shapeValue);
-    }
-    // Use console.log to check if the above filter worked
-    console.log(filteredData);
+    // Using ternary operators, filter the data to ensure that only data corresponding to the inputted values is being used
+    var filteredData = alienData.filter(ad =>   ((dateValue ? ad.datetime === dateValue : true) && 
+                                                (cityValue ? ad.city === cityValue.toLowerCase() : true) &&
+                                                (stateValue ? ad.state === stateValue : true) &&
+                                                (countryValue ? ad.country === countryValue : true) &&
+                                                (shapeValue ? ad.shape === shapeValue : true)));
     // To filter the table, first remove all previous rows
     tbody.html("");
-    // Using the table function from above, swap all the data for the filtered data
+    // Adapt the code used to generate the complete table using the filtered data from above
     filteredData.forEach((alienSighting) => {
         var row=tbody.append("tr");
         Object.entries(alienSighting).forEach(([key,value]) => {
-            var cell = row.append("td");
-            cell.text(value);
+        var cell = row.append("td");
+            if (key == 'state' || key == 'country' ) {
+                var val = value.toUpperCase();
+                cell.text(val);
+            }
+            else if (key == 'city') {
+                if(value.includes('(')) {
+                    var val = value.split(' (').map((v) => v.charAt(0).toUpperCase() + v.substring(1)).join(' (');
+                }
+                else {
+                    var val = value.split(' ').map((v) => v.charAt(0).toUpperCase() + v.substring(1)).join(' ');
+                }
+                cell.text(val);
+            }
+            else {
+                cell.text(value);
+            }
         })
     })
-})
+});
